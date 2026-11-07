@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.py[cod]
+service.pid
+models/
+outputs/*
+!outputs/.gitkeep
+logs/*
+!logs/.gitkeep

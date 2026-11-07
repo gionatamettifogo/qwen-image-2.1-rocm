@@ -1,0 +1,28 @@
+services:
+  qwen-image:
+    build: .
+    image: qwen-image-2.1-rocm:local
+    container_name: qwen-image-2.1
+    restart: unless-stopped
+    user: "1001:1001"
+    devices:
+      - /dev/kfd:/dev/kfd
+      - /dev/dri:/dev/dri
+    group_add:
+      - "44"
+      - "992"
+    ipc: host
+    shm_size: 8gb
+    ports:
+      - "127.0.0.1:${PORT:-8188}:8188"
+    environment:
+      HF_HOME: /models/huggingface
+      LD_LIBRARY_PATH: /opt/rocm-7.2.1/lib/llvm/lib:/opt/rocm/lib
+      QWEN_MODEL_ID: ${QWEN_MODEL_ID:-unsloth/Qwen-Image-2.1-FP8}
+      DEFAULT_STEPS: ${DEFAULT_STEPS:-40}
+      HF_TOKEN: ${HF_TOKEN:-}
+    volumes:
+      - ./models:/models
+      - ./outputs:/app/outputs
+      - ./logs:/app/logs
+      - ./server.py:/app/server.py:ro
