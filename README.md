@@ -40,8 +40,10 @@ reference images:
 
     ssh seratonin 'cd ~/github/qwen-image-2.1-rocm && python3 tests/generate_examples.py'
 
-The smoke tests default to 512×512 and eight steps. Set TEST_SIZE or
-TEST_STEPS to change them.
+The text and reference tests use the same prompts and seeds for host-to-host
+comparison. They default to 768×1024 and 20 steps. Set TEST_WIDTH,
+TEST_HEIGHT, or TEST_STEPS to adjust the settings. Reference images are in
+tests/assets/.
 
 ## Timing and logs
 
