@@ -8,21 +8,23 @@ The diffusion transformer uses the INT8 ConvRot Qwen Image 2.1 checkpoint, with 
 
 | Host | OS and kernel | GPU and host driver | Container and acceleration |
 |---|---|---|---|
-| Seratonin, this repo | Ubuntu 24.04.5 LTS; Linux 7.0.0-38-generic | AMD Radeon 890M, gfx1150, integrated into Ryzen AI 9 HX370. rocm-smi driver report: 7.0.0-38-generic (same as the host kernel release). | Docker 29.8.0; ROCm 7.2.1 PyTorch image on Ubuntu 24.04 with Python 3.12 and PyTorch 2.9.1; HIPBLAS build for gfx1150. |
-| Sparky, NVIDIA comparison | Ubuntu 24.04.5 LTS; Linux 7.0.0-1019-nvidia | NVIDIA GB10, compute capability 12.1; driver 595.99.02. NVIDIA-SMI reports CUDA 13.2 support. | Docker 29.6.2; NVIDIA CUDA 12.9.1 Ubuntu 24.04 image; stable-diffusion.cpp compiled for sm_121. |
+| Seratonin, this repo | Ubuntu 24.04.5 LTS; Linux 7.0.0-38-generic | AMD Radeon 890M, gfx1150, integrated into Ryzen AI 9 HX370. rocm-smi reports driver 7.0.0-38-generic, matching the host kernel release. | Docker 29.8.0; ROCm 7.2.1 PyTorch image on Ubuntu 24.04 with Python 3.12 and PyTorch 2.9.1; HIPBLAS build for gfx1150. |
+| NVIDIA DGX Spark GB10 128GB, NVIDIA comparison | Ubuntu 24.04.5 LTS; Linux 7.0.0-1019-nvidia | NVIDIA GB10, compute capability 12.1, in a 128 GB unified-memory system; driver 595.99.02. NVIDIA-SMI reports CUDA 13.2 support. | Docker 29.6.2; NVIDIA CUDA 12.9.1 Ubuntu 24.04 image; stable-diffusion.cpp compiled for sm_121. |
 
-Seratonin is a Minisforum AI X1 Pro with AMD Ryzen AI 9 HX370 (12 cores / 24 threads, up to 5.1 GHz), Radeon 890M, 96 GB DDR5, and a 2 TB PCIe 4.0 SSD. Docker exposes the GPU to the container through /dev/kfd and /dev/dri. The ROCm 7.2.1 user-space stack is in the container; the host supplies the Linux kernel and GPU device interface.
+Seratonin is a Minisforum AI X1 Pro with AMD Ryzen AI 9 HX370 (12 cores / 24 threads, up to 5.1 GHz), Radeon 890M, 96 GB DDR5, and a 2 TB PCIe 4.0 SSD. The Radeon 890M is an integrated RDNA 3.5 GPU with 16 compute units and a peak graphics frequency of 2.9 GHz; the running ROCm stack detects it as gfx1150. It has no separate VRAM pool: GPU memory is dynamically carved from and shared with the system's 96 GB DDR5. AMD lists the 890M core count and frequency in its [Ryzen AI 9 HX 370 specifications](https://www.amd.com/en/support/downloads/drivers.html/processors/ryzen/ryzen-ai-300-series/amd-ryzen-ai-9-hx-370.html); ROCm's [GPU hardware specifications](https://rocmdocs.amd.com/en/docs-7.2.4/reference/gpu-arch-specs.html) document the RDNA 3.5 gfx1150 target and dynamic shared-memory model.
+
+Docker exposes the GPU to the container through /dev/kfd and /dev/dri. The ROCm 7.2.1 user-space stack is in the container; the host supplies the Linux kernel and GPU device interface.
 
 ## Matched test results
 
 Both hosts used the same INT8 ConvRot diffusion checkpoint, BF16 VAE, Q4_K_M text/vision encoder, prompts, reference images, seeds, 768×1024 output size, and 20 steps.
 
-| Test | Seratonin, AMD Radeon 890M | Sparky, NVIDIA GB10 |
+| Test | Seratonin, AMD Radeon 890M | NVIDIA DGX Spark GB10 128GB |
 |---|---:|---:|
 | Unicorn text-to-image, seed 28417 | 288.438 s | 32.765 s |
 | Woman-at-harbor with two reference images, seed 73023 | 566.506 s | 165.620 s |
 
-These are local generation times, including per-request model loading, and excluding model download and image upload. Seratonin used its local model cache for the recorded tests. On Sparky, the first model download took 198.539 s for approximately 14 GB; subsequent requests used its local cache.
+These are local generation times, including per-request model loading, and excluding model download and image upload. Seratonin used its local model cache for the recorded tests. On the NVIDIA DGX Spark GB10 128GB, the first model download took 198.539 s for approximately 14 GB; subsequent requests used its local cache.
 
 ## Example outputs from Seratonin
 
