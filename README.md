@@ -2,7 +2,7 @@
 
 A headless, SSH-operated image-generation service for the Minisforum AI X1 Pro with an AMD Radeon 890M integrated GPU. The container builds upstream stable-diffusion.cpp with HIPBLAS for gfx1150 and refuses to start without an AMD GPU visible through ROCm. A display is not required.
 
-The diffusion transformer uses the INT8 ConvRot Qwen Image 2.1 checkpoint, with a BF16 Qwen Image 2.1 VAE and a Q4_K_M Qwen3-VL 8B GGUF text/vision encoder. The runner uses CPU offload with the host's unified memory.
+The diffusion transformer uses the INT8 ConvRot Qwen Image 2.1 checkpoint, with a BF16 Qwen Image 2.1 VAE and a Q4_K_M Qwen3-VL 8B GGUF text/vision encoder. The text encoder is assigned to CPU; diffusion and VAE operations use the Radeon 890M through HIPBLAS. The iGPU and CPU share the same physical DDR5 memory.
 
 ## Tested systems and acceleration stack
 
@@ -24,7 +24,7 @@ Both hosts used the same INT8 ConvRot diffusion checkpoint, BF16 VAE, Q4_K_M tex
 | Unicorn text-to-image, seed 28417 | 288.438 s | 32.765 s |
 | Woman-at-harbor with two reference images, seed 73023 | 566.506 s | 165.620 s |
 
-These are local generation times, including per-request model loading, and excluding model download and image upload. The Radeon 890M host used its local model cache for the recorded tests. On the NVIDIA DGX Spark GB10 128GB, the first model download took 198.539 s for approximately 14 GB; subsequent requests used its local cache.
+The comparison table and committed Minisforum AI X1 Pro samples are from the original run with --offload-to-cpu enabled. Times include per-request model loading and exclude initial weight downloads and uploads. A direct CLI rerun without that flag at 768×1024, 20 steps, seed 28417 completed in 269.99 s; its log assigned 7.56 GB of diffusion/VAE parameters to ROCm and 5.41 GB of text-encoder parameters to CPU. Those backend labels describe placement in the unified-memory system, not separate physical memory pools. The two-reference case has not yet been remeasured without the flag. The NVIDIA DGX Spark GB10 128GB first model download took 198.539 s for approximately 14 GB; subsequent requests used its local cache.
 
 ## Example outputs from the Minisforum AI X1 Pro
 

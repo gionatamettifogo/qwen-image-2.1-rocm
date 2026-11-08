@@ -115,7 +115,6 @@ async def generate(
                 "--llm", paths["llm"],
                 "--llm_vision", paths["llm_vision"],
                 "--backend", "te=cpu,vae=ROCm0,diffusion=ROCm0",
-                "--offload-to-cpu",
                 "--sampling-method", "euler",
                 "--cfg-scale", "6.0",
                 "--steps", str(steps),
