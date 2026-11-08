@@ -1,17 +1,17 @@
-# Qwen Image 2.1 on Seratonin
+# Qwen Image 2.1 on Minisforum AI X1 Pro
 
-A headless, SSH-operated image-generation service for the AMD Radeon 890M integrated GPU in the Minisforum AI X1 Pro. The container builds upstream stable-diffusion.cpp with HIPBLAS for gfx1150 and refuses to start without an AMD GPU visible through ROCm. A display is not required.
+A headless, SSH-operated image-generation service for the Minisforum AI X1 Pro with an AMD Radeon 890M integrated GPU. The container builds upstream stable-diffusion.cpp with HIPBLAS for gfx1150 and refuses to start without an AMD GPU visible through ROCm. A display is not required.
 
 The diffusion transformer uses the INT8 ConvRot Qwen Image 2.1 checkpoint, with a BF16 Qwen Image 2.1 VAE and a Q4_K_M Qwen3-VL 8B GGUF text/vision encoder. The runner uses CPU offload with the host's unified memory.
 
 ## Tested systems and acceleration stack
 
-| Host | OS and kernel | GPU and host driver | Container and acceleration |
+| Hardware | OS and kernel | GPU and host driver | Container and acceleration |
 |---|---|---|---|
-| Seratonin, this repo | Ubuntu 24.04.5 LTS; Linux 7.0.0-38-generic | AMD Radeon 890M, gfx1150, integrated into Ryzen AI 9 HX370. rocm-smi reports driver 7.0.0-38-generic, matching the host kernel release. | Docker 29.8.0; ROCm 7.2.1 PyTorch image on Ubuntu 24.04 with Python 3.12 and PyTorch 2.9.1; HIPBLAS build for gfx1150. |
+| Minisforum AI X1 Pro, this repo | Ubuntu 24.04.5 LTS; Linux 7.0.0-38-generic | AMD Radeon 890M, gfx1150, integrated into Ryzen AI 9 HX370. rocm-smi reports driver 7.0.0-38-generic, matching the host kernel release. | Docker 29.8.0; ROCm 7.2.1 PyTorch image on Ubuntu 24.04 with Python 3.12 and PyTorch 2.9.1; HIPBLAS build for gfx1150. |
 | NVIDIA DGX Spark GB10 128GB, NVIDIA comparison | Ubuntu 24.04.5 LTS; Linux 7.0.0-1019-nvidia | NVIDIA GB10, compute capability 12.1, in a 128 GB unified-memory system; driver 595.99.02. NVIDIA-SMI reports CUDA 13.2 support. | Docker 29.6.2; NVIDIA CUDA 12.9.1 Ubuntu 24.04 image; stable-diffusion.cpp compiled for sm_121. |
 
-Seratonin is a Minisforum AI X1 Pro with AMD Ryzen AI 9 HX370 (12 cores / 24 threads, up to 5.1 GHz), Radeon 890M, 96 GB DDR5, and a 2 TB PCIe 4.0 SSD. The Radeon 890M is an integrated RDNA 3.5 GPU with 16 compute units and a peak graphics frequency of 2.9 GHz; the running ROCm stack detects it as gfx1150. It has no separate VRAM pool: GPU memory is dynamically carved from and shared with the system's 96 GB DDR5. AMD lists the 890M core count and frequency in its [Ryzen AI 9 HX 370 specifications](https://www.amd.com/en/support/downloads/drivers.html/processors/ryzen/ryzen-ai-300-series/amd-ryzen-ai-9-hx-370.html); ROCm's [GPU hardware specifications](https://rocmdocs.amd.com/en/docs-7.2.4/reference/gpu-arch-specs.html) document the RDNA 3.5 gfx1150 target and dynamic shared-memory model.
+The Minisforum AI X1 Pro has an AMD Ryzen AI 9 HX370 (12 cores / 24 threads, up to 5.1 GHz), Radeon 890M, 96 GB DDR5, and a 2 TB PCIe 4.0 SSD. The Radeon 890M is an integrated RDNA 3.5 GPU with 16 compute units and a peak graphics frequency of 2.9 GHz; the running ROCm stack detects it as gfx1150. It has no separate VRAM pool: GPU memory is dynamically carved from and shared with the system's 96 GB DDR5. AMD lists the 890M core count and frequency in its [Ryzen AI 9 HX 370 specifications](https://www.amd.com/en/support/downloads/drivers.html/processors/ryzen/ryzen-ai-300-series/amd-ryzen-ai-9-hx-370.html); ROCm's [GPU hardware specifications](https://rocmdocs.amd.com/en/docs-7.2.4/reference/gpu-arch-specs.html) document the RDNA 3.5 gfx1150 target and dynamic shared-memory model.
 
 Docker exposes the GPU to the container through /dev/kfd and /dev/dri. The ROCm 7.2.1 user-space stack is in the container; the host supplies the Linux kernel and GPU device interface.
 
@@ -19,14 +19,14 @@ Docker exposes the GPU to the container through /dev/kfd and /dev/dri. The ROCm 
 
 Both hosts used the same INT8 ConvRot diffusion checkpoint, BF16 VAE, Q4_K_M text/vision encoder, prompts, reference images, seeds, 768×1024 output size, and 20 steps.
 
-| Test | Seratonin, AMD Radeon 890M | NVIDIA DGX Spark GB10 128GB |
+| Test | Minisforum AI X1 Pro, Radeon 890M | NVIDIA DGX Spark GB10 128GB |
 |---|---:|---:|
 | Unicorn text-to-image, seed 28417 | 288.438 s | 32.765 s |
 | Woman-at-harbor with two reference images, seed 73023 | 566.506 s | 165.620 s |
 
-These are local generation times, including per-request model loading, and excluding model download and image upload. Seratonin used its local model cache for the recorded tests. On the NVIDIA DGX Spark GB10 128GB, the first model download took 198.539 s for approximately 14 GB; subsequent requests used its local cache.
+These are local generation times, including per-request model loading, and excluding model download and image upload. The Radeon 890M host used its local model cache for the recorded tests. On the NVIDIA DGX Spark GB10 128GB, the first model download took 198.539 s for approximately 14 GB; subsequent requests used its local cache.
 
-## Example outputs from Seratonin
+## Example outputs from the Minisforum AI X1 Pro
 
 These committed PNGs are the outputs from the two matched tests. The reference-conditioned test uses the portrait and harbor images in tests/assets/.
 
@@ -42,23 +42,25 @@ The sample files are tracked under tests/results/ and arrive with git pull. The 
 
 ## Install, start, and stop
 
-Run these commands over SSH:
+Connect to the machine using your own SSH destination, then run these commands in the checkout:
 
-    ssh seratonin 'cd ~/github/qwen-image-2.1-rocm && ./install.sh'
-    ssh seratonin 'cd ~/github/qwen-image-2.1-rocm && ./start.sh'
-    ssh seratonin 'cd ~/github/qwen-image-2.1-rocm && ./stop.sh'
+    cd ~/github/qwen-image-2.1-rocm
+    ./install.sh
+    ./start.sh
+    ./stop.sh
 
 For Hugging Face access, copy .env.example to .env, accept the model licenses if requested, and set HF_TOKEN in that ignored local file. The first generation downloads approximately 14 GB of model weights into models/.
 
-The API binds to 127.0.0.1:8188. From a Mac, use an SSH tunnel:
+The API binds to 127.0.0.1:8188. From another computer, replace user@your-host with your SSH destination to create a tunnel:
 
-    ssh -N -L 8188:127.0.0.1:8188 seratonin
+    ssh -N -L 8188:127.0.0.1:8188 user@your-host
 
 ## Reproduce the tests
 
-With the service running:
+With the service running on the host:
 
-    ssh seratonin 'cd ~/github/qwen-image-2.1-rocm && python3 tests/generate_examples.py'
+    cd ~/github/qwen-image-2.1-rocm
+    python3 tests/generate_examples.py
 
 The script prints output paths and timings. Fresh PNGs go under outputs/; request timings are appended to logs/timings.jsonl, and native inference logs are saved under logs/. To refresh the committed samples, copy the newly generated matching PNGs into tests/results/ using the names above, then commit the updated images. The tests default to 768×1024 and 20 steps; set TEST_WIDTH, TEST_HEIGHT, or TEST_STEPS to change those settings.
 
