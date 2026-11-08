@@ -84,7 +84,7 @@ def generate(name: str, prompt: str, references=()) -> dict:
         "generation_seconds": result["generation_seconds"],
         "model_download_seconds": result["model_download_seconds"],
         "gpu": result["gpu"],
-        "gfx": result["gfx"],
+        "gfx": result.get("gfx", result.get("compute_capability")),
         "backend": result["backend"],
         "reference_count": result["reference_count"],
     }, indent=2))
@@ -94,7 +94,7 @@ def generate(name: str, prompt: str, references=()) -> dict:
 def main():
     with urllib.request.urlopen(f"{BASE_URL}/health", timeout=10) as response:
         health = json.load(response)
-    if not health.get("gpu") or not health.get("hip"):
+    if not health.get("gpu") or not health.get("backend"):
         raise RuntimeError(f"Expected active ROCm GPU, got {health}")
 
     generate(
